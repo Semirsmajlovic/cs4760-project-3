@@ -419,3 +419,125 @@ int call_log(void) {
   }
   return retval;
 }
+
+
+// Run Slave
+void run_slave(int int_process_integer) {
+  char process_number[20];
+  char * argv[3] = { 
+    "slave", 
+    process_number, 
+    NULL 
+  };
+  char * Env[] = {
+    NULL 
+  };
+  snprintf(
+    process_number, 
+    sizeof(process_number), 
+    "%d", 
+    int_process_integer
+  );
+  if (execve("./slave", argv, Env) < 0) {
+    fprintf(
+      stderr, 
+      "Our execution has been terminated due to a failed response.\n"
+    );
+    perror(
+      p_error_executable
+    );
+  }
+}
+
+// Calculate Total Processes
+int total_processes(pid_t *process_group) {
+  int int_count = 0;
+  for (int i = 0; i < 20; i += 1) {
+    if (process_group[i] != 0) {
+      int_count += 1;
+    } 
+  }
+  return int_count;
+}
+
+// Remove Process
+void remove_process(pid_t *process_group, pid_t pid) {
+  for (int i = 0; i < 20; i += 1) {
+    if (process_group[i] == pid) {
+      process_group[i] = 0;
+      break;
+    }
+  }
+}
+
+// Remove Child Processes
+void remove_child_processes(pid_t *process_group) {
+  int wstatus = 0;
+  for (int i= 0; i < 20; i += 1) {
+    if (process_group[i] != 0) {
+      kill(
+        process_group[i], 
+        SIGKILL
+      );
+      update_log(
+        log_paused, 
+        process_group[i]
+      );
+      waitpid(
+        process_group[i], 
+        &wstatus, 
+        0
+      );
+      update_log(
+        log_terminated, 
+        process_group[i]
+      );
+      update_log(
+        log_process_terminate, 
+        wstatus
+      );
+      process_group[i] = 0;
+    }
+  }
+}
+
+// Print Processes
+void print_processes(pid_t *process_group) {
+  for (int i = 0; i < 20; i += 1) {
+    if (process_group[i] != 0) {
+      fprintf(
+        user_log, 
+        "=> [%s]: Our child process using index %d is using ID %d..\n",
+        time_defined,
+        i, 
+        process_group[i]
+      );
+    }
+  }
+}
+
+// Verify Completed Processes
+void verify_completed_processes(pid_t *process_group) {
+  int wstatus;
+  int itemp;
+  for (int i = 0; i < 20; i += 1) {
+    if (process_group[i] != 0) {
+      itemp = waitpid(
+        process_group[i], 
+        &wstatus,
+        WNOHANG
+      ); 
+      if (itemp > 0) {
+        update_log(
+          log_terminated,
+          itemp
+        );
+        update_log(
+          log_process_terminate,
+          wstatus
+        );
+        process_group[i] = 0;
+      }
+    }
+  }
+}
