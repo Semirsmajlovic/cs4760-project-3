@@ -162,3 +162,108 @@ void clean_memory(void) {
   }
   not_cleaned = 0;
 }
+
+// Set Signature Int Executable
+static void signature_int_executable(int a) {
+    (void)a;
+    handle_control_c = 0;
+    fprintf(
+      stderr,
+      "CTRL_C caught\n"
+    );
+}
+
+// Build Int Executable
+int build_int_single_executable() {
+  int retval = 0;
+  struct sigaction newer_act, older_act;
+  newer_act.sa_handler = signature_int_executable;
+  sigemptyset (&newer_act.sa_mask);
+  newer_act.sa_flags = 0;
+  if (sigaction (SIGINT, NULL, &older_act) < 0) {
+    perror(
+      p_error_executable
+    );
+    retval = -1;
+  } else if (older_act.sa_handler != SIG_IGN) {
+    if (sigaction (SIGINT, &newer_act, NULL) < 0) {
+      perror(
+        p_error_executable
+      );
+      retval = -1;
+    }
+  } else {
+    fprintf(
+      stderr,
+      "%s : SIGINT handler was not SIG_IGN\n",
+      p_error_executable
+    );
+  }
+  return retval;
+}
+
+// Timer Handler
+void timer_int_handler(int s) {
+  handle_time_expiration = 0;
+}
+
+// Build Int Timer
+int build_inter_timer(int int_in_seconds) {
+  int retval = 0;
+  struct sigaction newer_act, older_act;
+  newer_act.sa_handler = timer_int_handler;
+  sigemptyset (&newer_act.sa_mask);
+  newer_act.sa_flags = 0;
+  if (sigaction (SIGALRM, NULL, &older_act) < 0) {
+    perror(p_error_executable);
+    retval = -1;
+  } else if (older_act.sa_handler != SIG_IGN) {
+    if (sigaction (SIGALRM, &newer_act, NULL) < 0) {
+      perror (p_error_executable);
+      retval = -1;
+    }
+  } else {
+    fprintf(
+      stderr,
+      "%s : SIGALRM handler was not SIG_IGN\n",
+      p_error_executable
+    );
+  }
+  if (retval >= 0) {
+    struct itimerval value; 
+    value.it_interval.tv_sec = int_in_seconds;
+    value.it_interval.tv_usec = 0;
+    value.it_value = value.it_interval;
+    if (setitimer(ITIMER_REAL, &value, NULL) < 0) {
+      fprintf(
+        stderr, 
+        "Unable to set up timer\n"
+      );
+      perror(
+        p_error_executable
+      );
+    }
+  }
+  return retval;
+}
+
+// Define time
+static char time_defined[20];
+
+// Update Time
+void update_time(void) {
+  time_t user_current_time;
+  struct tm *user_local_timeframe;
+  time(
+    &user_current_time
+  );
+  user_local_timeframe = localtime(
+    &user_current_time
+  );
+  strftime(
+    time_defined, 
+    sizeof(time_defined), 
+    "%H:%M:%S", 
+    user_local_timeframe
+  );
+}
