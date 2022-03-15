@@ -92,3 +92,73 @@ int build_semaphore(void) {
   }
   return 0;
 }
+
+// Clean Memory
+void clean_memory(void);
+
+// Build Memory
+int build_memory(void) {
+   int retval = 0;
+   int shmid = shmget(
+     0xBD1337, 
+     sizeof(bakery_structure), 
+     0660 | IPC_CREAT 
+    );
+   retval = shmid;
+   if (shmid > 0) {
+     merged_bakery = (
+       p_bakery_structure
+       )(shmat(
+         shmid, 
+         NULL, 
+         0
+        )
+      );
+     if ((void *) merged_bakery == (void *) -1) {
+       perror(p_error_executable);
+       merged_bakery = NULL;
+       retval = -1;
+     }
+   } else {
+     perror(
+       p_error_executable
+      );
+     retval = -1;
+   }
+  if (retval >= 0) {
+    atexit(clean_memory);
+  }
+  return retval;
+}
+
+// Clean Memory
+void clean_memory(void) {
+  static int not_cleaned = 1;
+  if (not_cleaned) {
+    int shmid = shmget(
+      0xBD1337, 
+      0, 
+      0
+    ); 
+    if (shmid > 0) {
+      if (shmctl(shmid, IPC_RMID, NULL) < 0) {
+        perror(
+          p_error_executable
+        );
+        fprintf(
+          stderr,
+          "Unable to set shared memory for deletion\n"
+        );
+      }
+    } else {
+      perror (
+        p_error_executable
+      );
+      fprintf(
+        stderr, 
+        "Unable to get key to shared memory\n"
+      );
+    }
+  }
+  not_cleaned = 0;
+}
