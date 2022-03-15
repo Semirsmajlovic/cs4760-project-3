@@ -326,8 +326,8 @@ int main(int argc, char *argv[]) {
         user_process_identifier
       );
     }
-    int perrorHeaderLength = strlen(argv[0]) + strlen(": Error") + 1;
-    p_error_executable = malloc(perrorHeaderLength + 3);
+    int error_handler = strlen(argv[0]) + strlen(": Error") + 1;
+    p_error_executable = malloc(error_handler + 3);
     if (build_memory() < 0) {
       fprintf(stderr, "There has been an issue setting up the Shared Memory.\n");
       completed = 0;
