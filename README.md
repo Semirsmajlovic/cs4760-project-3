@@ -1,5 +1,17 @@
 # Project 3
 
+## Execution:
+
+To properly execute the program, run: 
+
+1. To build: make
+2. Then run: ./master -t {seconds} {total_processes} - Example: ./master -t 10 20
+3. To clean: make clean
+
+## Challenges:  
+
+There are a lot of bugs that I tried to handle, but was running out of time. The slave portion could be improved and the master could have a few more error handlers, but it's a learning process.
+
 ## Project Instructions:
 
 ### Purpose
