@@ -541,3 +541,172 @@ void verify_completed_processes(pid_t *process_group) {
     }
   }
 }
+
+// Main Function
+int main (int argc, char* argv[]) {
+  int completed = 1; 
+  int opt;
+  int execution_seconds = 100;
+  int count_processes;
+  pid_t sibling_process[20];
+  opterr = 0;
+  while ((opt = getopt(argc,argv,"ht:")) != -1) {
+    switch (opt) {
+        case 'h':
+            fprintf(stderr, "\nProgram Usage:\n");
+            fprintf(stderr, "%s -t ss n\n\n", argv[0]);
+            break;
+        case 't':
+            execution_seconds = atoi(optarg);
+            break;
+        case '?':
+            break;
+    }
+  }
+  count_processes = atoi (argv[optind]);
+  if (count_processes < 1 || count_processes > 20) {
+    fprintf(
+      stderr,
+      "The total number of processes cannot exceed 20.\n"
+    );
+    if (count_processes > 20) {
+      count_processes = 20;
+    } else {
+      count_processes = 1;
+    }
+  }
+  fprintf(
+    stderr,
+    "\nOur master process has begun and will run for %d seconds.\n",
+    execution_seconds
+  );
+  fprintf(
+    stderr,
+    "The slave process ID %d will now be created..\n",
+    count_processes
+  );
+  if (call_log() < 0) {
+    fprintf(
+      stderr, 
+      "The log file has not be opened, please try again.\n"
+    );
+    completed = 0;
+  } else {
+    update_log(
+      start_log, 
+      count_processes
+    );
+    update_log(
+      started_log_timeout, 
+      execution_seconds
+    );
+  }
+  int shmid1;
+  if (completed) {
+    shmid1 = build_memory();
+    if (shmid1 < 0) {
+      fprintf(
+        stderr,
+        "Error: Please make sure that the proper memory is setup for allocation.\n"
+      );
+      completed = 0;
+    }
+    build_semaphore();
+    if (build_inter_timer(execution_seconds) < 0) {
+      completed = 0;
+    } else {
+      update_log(
+        begin_log_timeout, 
+        execution_seconds
+      );
+    }
+  }
+  for (int i = 0; i < 20; i += 1) {
+    sibling_process[i] = 0;
+  }
+  int int_process_total = 0;
+  while (completed && (int_process_total < count_processes)) {
+    sibling_process[int_process_total] = fork();
+    switch (sibling_process[int_process_total]) {
+      case -1:
+        fprintf(
+          stderr, 
+          "Our process was unable to fork, please try again.\n"
+        );
+        update_log(
+          failed_log_fork, 
+          1
+        );
+        completed = 0;
+        break;
+      case 0:
+        run_slave(
+          int_process_total + 1
+        );
+        completed = 0;
+        printf("Our execution of slave was not successful.");
+        exit(1);
+        break;
+    }  
+    if (completed) {
+      update_log(
+        start_log, 
+        sibling_process[
+          int_process_total
+          ]
+        );
+    }
+    int_process_total += 1;
+  }
+  print_processes(sibling_process);
+  if (completed) {
+      while (handle_control_c && handle_time_expiration && (total_processes(sibling_process) > 0)) {
+        verify_completed_processes(
+          sibling_process
+        );
+      }
+      if (!handle_control_c) {
+        update_log(
+          log_interruption, 
+          0
+        );
+        fprintf(
+          stderr, 
+          "Our process was terminated using CTRL + C.\n\n"
+        );
+      } else if (!handle_time_expiration) {
+        update_log(
+          log_timedout, 
+          0
+        );
+        fprintf(
+          stderr, 
+          "Our time internal has terminated our process.\n\n"
+        );
+      } else {
+        update_log(
+          log_children_complete, 
+          0
+        );
+        fprintf(
+          stderr, 
+          "All processes have now been completed.\n"
+        );
+      }
+    }
+  
+  // Remove Child Processes
+  remove_child_processes(sibling_process);
+  if (merged_bakery != NULL) {
+    if (shmdt(merged_bakery) < 0) {
+      perror(
+        p_error_executable
+      );
+    }
+    clean_memory();
+  }
+  update_log (
+    log_exit, 
+    0
+  );
+}
