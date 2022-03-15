@@ -267,3 +267,155 @@ void update_time(void) {
     user_local_timeframe
   );
 }
+
+// Define ENUMS
+typedef enum {
+  master_start_log, 
+  started_log_timeout, 
+  log_interruption, 
+  failed_log_fork,
+  start_log, log_paused, 
+  log_terminated, 
+  log_process_terminate,
+  log_children_complete, 
+  begin_log_timeout,
+  log_timedout, 
+  log_exit,
+  semaphores_log_created, 
+  semaphores_log_deleted
+} log_message;
+
+// Define file
+FILE * user_log = NULL;
+
+// Update Log
+void update_log(log_message msg, int optional_param) {
+  update_time();
+  fprintf(
+    user_log, 
+    "=> [%s]: ", 
+    time_defined
+  );
+  switch(msg) {
+    case semaphores_log_created:
+      fprintf(
+        user_log, 
+        "Our semaphore has been created using ID %d..\n", 
+        optional_param
+      );
+      break;
+    case semaphores_log_deleted:
+      fprintf(
+        user_log, 
+        "Our semaphore using ID %d has been deleted..\n", 
+        optional_param
+      );
+      break;
+    case master_start_log:
+      fprintf(
+        user_log, 
+        "Initializing start..\n"
+      );
+      fprintf(
+        user_log, 
+        "There will be a total of %d processess executed..\n", 
+        optional_param
+      );
+      break;
+    case started_log_timeout:
+      fprintf(
+        user_log, 
+        "Our timeout is set for %d seconds..\n", 
+        optional_param
+      );
+      break;
+    case begin_log_timeout:
+      fprintf(
+        user_log, 
+        "There has been an interruption within %d seconds of execution..\n", 
+        optional_param
+      );
+      break;
+    case failed_log_fork:
+      fprintf(
+        user_log, 
+        "There has been an issue executing our child process using ID: %d\n", 
+        optional_param
+      );
+      break;
+    case log_interruption:
+      fprintf(
+        user_log, 
+        "The end user has invoked the execution of CTRL + C..\n"
+      );
+      break;
+    case start_log:
+      fprintf(
+        user_log, 
+        "Our process is now starting using ID %d ..\n", 
+        optional_param
+      );
+      break;
+    case log_paused:
+      fprintf(
+        user_log, 
+        "Our Process ID %d has been paused..\n", 
+        optional_param
+      );
+      break;
+    case log_terminated:
+      fprintf(
+        user_log, 
+        "Our Process ID %d has been terminated..\n",
+        optional_param
+      );
+      break;
+    case log_process_terminate:
+      fprintf(
+        user_log, 
+        "Our process has paused with the following message: %d..\n", 
+        optional_param
+      );
+      break;
+    case log_timedout:
+      fprintf(
+        user_log, 
+        "Our timeout has exceeded the time set, the program is now terminating..\n"
+      );
+      break;
+    case log_children_complete:
+      fprintf(
+        user_log, 
+        "The child processes have now been complete..\n"
+      );
+      break;      
+    case log_exit:
+      fprintf(
+        user_log, 
+        "Our processes are now being terminated, we are complete.\n"
+      );
+      break;
+  }
+}
+
+// Call Log
+int call_log(void) {
+  int retval = 0;
+  char process_log[20];
+  snprintf(
+    process_log, 
+    sizeof(process_log), 
+    "logfile"
+  );
+  user_log = fopen(
+    process_log, 
+    "w"
+  );
+  if (user_log == NULL) {
+    perror(
+      p_error_executable
+    );
+    retval = -1;
+  }
+  return retval;
+}
